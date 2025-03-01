@@ -1,0 +1,49 @@
+% Real-Time Audio Signal Visualization and Combination
+
+% Step 1: Set up audio device reader and writer
+fs = 44100; % Sample rate (Hz)
+frameSize = 1024; % Number of samples per frame
+
+% Create an audioDeviceReader object to capture audio from the microphone
+deviceReader = audioDeviceReader('SampleRate', fs, 'SamplesPerFrame', frameSize);
+
+% Create an audioDeviceWriter object to play back audio to the laptop speakers
+deviceWriter = audioDeviceWriter('SampleRate', fs);
+
+% Set up the time scope to display all three signals
+scope = dsp.TimeScope('SampleRate', fs, ...
+                      'TimeSpan', 0.1, ... % Time span in seconds
+                      'BufferLength', 10 * fs, ...
+                      'YLimits', [-1 1], ... % Y-axis limits for audio amplitude
+                      'Title', 'Input, Inverted, and Combined Signals', ...
+                      'NumInputPorts', 3, ... % Three signals: Input, Inverted, Combined
+                      'ShowGrid', true, ...
+                      'ChannelNames', {'Input Signal', 'Inverted Signal', 'Combined Signal'});
+
+disp('Processing... Press Ctrl+C to stop.');
+
+% Step 2: Process audio in real time
+try
+    while true
+        % Step 2a: Read audio data from the microphone
+        inputSignal = deviceReader(); % Original input from the microphone
+        
+        % Step 2b: Generate the inverted signal
+        invertedSignal = -inputSignal; % Inverted version
+        
+        % Step 2c: Create the combined signal (input + inverted)
+        combinedSignal = inputSignal + invertedSignal; % Should theoretically be close to zero
+        
+        % Step 2d: Visualize all three signals in the time scope
+        scope(inputSignal, invertedSignal, combinedSignal);
+        
+        % Step 2e: Output the combined signal to the speakers
+        deviceWriter(combinedSignal);
+    end
+catch
+    % Step 3: Clean up resources
+    release(deviceReader);
+    release(deviceWriter);
+    release(scope);
+    disp('Processing stopped.');
+end
